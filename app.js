@@ -21,7 +21,12 @@ const infoData = {
 async function init() {
   model = await tf.loadGraphModel('./model/model.json');
   const video = document.getElementById('webcam');
-  stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  } catch (error) {
+    console.log('Rear camera not available, trying default camera:', error);
+    stream = await navigator.mediaDevices.getUserMedia({video: true});
+  }
   video.srcObject = stream;
 
   // Add event listeners
