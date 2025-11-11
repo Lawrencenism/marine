@@ -28,6 +28,7 @@ async function init() {
     stream = await navigator.mediaDevices.getUserMedia({video: true});
   }
   video.srcObject = stream;
+  await video.play();
 
   // Add event listeners
   document.getElementById('capture').addEventListener('click', captureAndPredict);
