@@ -21,9 +21,11 @@
 <div class="app-container">
   <div class="species-card">
     <div id="species-name">[Species Name]</div>
-    <video id="webcam" autoplay playsinline></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+  <video id="webcam" autoplay playsinline muted></video>
+  <canvas id="canvas" style="display:none; width:100%; border-radius:15px; background:#000;"></canvas>
+  <div id="error" style="color:red; display:none; margin-top:10px;"></div>
     <div class="buttons">
+      <div class="button" id="start-camera" title="Start camera">▶️</div>
       <div class="button" id="flash">⚡</div>
       <div class="button" id="capture">📸</div>
       <div class="button" id="gallery">🖼️</div>
