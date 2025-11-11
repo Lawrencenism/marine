@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marine Species Explorer</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#e6f2ff; }
+  .app-container { max-width: 400px; margin: auto; padding: 10px; }
+  .species-card { background: #fff; border-radius: 15px; padding: 10px; text-align:center; }
+  #species-name { font-weight:bold; margin: 10px 0; font-size: 1.2rem; }
+  #webcam { border-radius: 15px; width: 100%; }
+  .buttons { display:flex; justify-content:space-around; margin: 10px 0; }
+  .button { font-size: 1.5rem; cursor:pointer; }
+  .info-panel { text-align:left; background:#cce6ff; border-radius: 10px; padding:10px; margin:10px 0; }
+  .add-btn { display:block; width:100%; padding:10px; font-size:1rem; font-weight:bold;
+             background:#00cc66; color:#fff; border:none; border-radius:10px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <div class="species-card">
+    <div id="species-name">[Species Name]</div>
+    <video id="webcam" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="buttons">
+      <div class="button" id="flash">⚡</div>
+      <div class="button" id="capture">📸</div>
+      <div class="button" id="gallery">🖼️</div>
+    </div>
+    <div class="info-panel">
+      <p>Common Name: <span id="common-name">-</span></p>
+      <p>Scientific Name: <span id="scientific-name">-</span></p>
+      <p>Habitat: <span id="habitat">-</span></p>
+      <p>Other Details: <span id="details">-</span></p>
+    </div>
+    <button class="add-btn">+ Add to my collection</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+<script src="app.js"></script>
+</body>
+</html>
