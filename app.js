@@ -59,19 +59,17 @@ async function init() {
     const galleryBtn = document.getElementById('gallery');
     const addBtn = document.querySelector('.add-btn');
     
+    // Only throw error for essential buttons
     if (!startBtn) throw new Error('start-camera button not found');
-    if (!flipBtn) throw new Error('flip-camera button not found');
     if (!captureBtn) throw new Error('capture button not found');
-    if (!flashBtn) throw new Error('flash button not found');
-    if (!galleryBtn) throw new Error('gallery button not found');
-    if (!addBtn) throw new Error('add-btn button not found');
     
+    // Setup listeners for available buttons
     startBtn.addEventListener('click', toggleCamera);
-    flipBtn.addEventListener('click', flipCamera);
-    captureBtn.addEventListener('click', captureAndPredict);
-    flashBtn.addEventListener('click', toggleFlash);
-    galleryBtn.addEventListener('click', () => alert('Gallery not implemented yet'));
-    addBtn.addEventListener('click', () => alert('Added to collection!'));
+    if (flipBtn) flipBtn.addEventListener('click', flipCamera);
+    if (captureBtn) captureBtn.addEventListener('click', captureAndPredict);
+    if (flashBtn) flashBtn.addEventListener('click', toggleFlash);
+    if (galleryBtn) galleryBtn.addEventListener('click', () => alert('Gallery not implemented yet'));
+    if (addBtn) addBtn.addEventListener('click', () => alert('Added to collection!'));
     
     console.log('✓ App initialized successfully!');
   } catch (error) {
@@ -255,3 +253,11 @@ function toggleFlash() {
 
 // Initialize when page loads
 window.addEventListener('load', init);
+// Also try DOMContentLoaded for faster initialization
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, checking if init needed...');
+  if (!model) {
+    console.log('Init not run yet, running now...');
+    init();
+  }
+});
