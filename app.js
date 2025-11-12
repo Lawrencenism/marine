@@ -33,22 +33,44 @@ const infoData = {
 
 async function init() {
   // Load model using Teachable Machine loader
-  try {
-    console.log('Loading Teachable Machine model from ./model/model.json...');
-    const modelURL = './model/model.json';
-    const metadataURL = './model/metadata.json';
-    
-    model = await tmImage.custom.fromURL(modelURL, metadataURL);
-    console.log('✓ Model loaded successfully:', model);
-  } catch (mErr) {
-    console.error('❌ Model failed to load. Error:', mErr);
-    console.error('Stack:', mErr.stack);
-    
+  const pathsToTry = [
+    { model: './model/model.json', metadata: './model/metadata.json', label: 'relative (.)' },
+    { model: '/model/model.json', metadata: '/model/metadata.json', label: 'absolute (/)' },
+    { model: 'model/model.json', metadata: 'model/metadata.json', label: 'no-dot' }
+  ];
+  
+  let loaded = false;
+  
+  for (const pathConfig of pathsToTry) {
+    try {
+      console.log(`Attempting model load from ${pathConfig.label}: ${pathConfig.model}`);
+      
+      // First verify files can be fetched
+      const modelResp = await fetch(pathConfig.model);
+      const metadataResp = await fetch(pathConfig.metadata);
+      
+      if (!modelResp.ok || !metadataResp.ok) {
+        console.warn(`Files not found (${pathConfig.label}): model=${modelResp.status}, metadata=${metadataResp.status}`);
+        continue;
+      }
+      
+      console.log(`✓ Files accessible (${pathConfig.label}), loading model...`);
+      model = await tmImage.custom.fromURL(pathConfig.model, pathConfig.metadata);
+      console.log('✓ Model loaded successfully:', model);
+      loaded = true;
+      break;
+    } catch (mErr) {
+      console.warn(`Failed (${pathConfig.label}):`, mErr.message);
+    }
+  }
+  
+  if (!loaded) {
     const errEl = document.getElementById('error');
     if (errEl) {
-      errEl.innerText = 'Model failed to load: ' + mErr.message + '. Make sure model/model.json and model/metadata.json are accessible.';
+      errEl.innerText = 'Model failed to load from all paths. Check browser console for details. Ensure model/ directory is in the same folder as index.html.';
       errEl.style.display = 'block';
     }
+    console.error('❌ All model load attempts failed. Paths tried:', pathsToTry.map(p => p.model));
   }
 
   const video = document.getElementById('webcam');

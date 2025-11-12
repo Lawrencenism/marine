@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Path & Model Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .test { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+    .ok { background: #d4edda; }
+    .error { background: #f8d7da; }
+  </style>
+</head>
+<body>
+  <h1>Marine App Debug Info</h1>
+  
+  <div id="results"></div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+  <script>
+    const results = document.getElementById('results');
+    
+    function addResult(title, success, details) {
+      const div = document.createElement('div');
+      div.className = 'test ' + (success ? 'ok' : 'error');
+      div.innerHTML = `<strong>${title}</strong><br/>${details}`;
+      results.appendChild(div);
+    }
+    
+    async function debug() {
+      // Test 1: Current path
+      addResult('Current Location', true, `${window.location.href}`);
+      
+      // Test 2: Check TensorFlow
+      const hasTf = typeof tf !== 'undefined';
+      addResult('TensorFlow.js Available', hasTf, hasTf ? 'Yes, v' + tf.version.tfjs : 'No');
+      
+      // Test 3: Check Teachable Machine
+      const hasTm = typeof tmImage !== 'undefined';
+      addResult('Teachable Machine Available', hasTm, hasTm ? 'Yes' : 'No');
+      
+      // Test 4: Try fetch model.json from different paths
+      const paths = ['./model/model.json', '/model/model.json', 'model/model.json'];
+      for (const path of paths) {
+        try {
+          const resp = await fetch(path);
+          const success = resp.ok;
+          addResult(`Fetch ${path}`, success, `Status: ${resp.status}`);
+        } catch (e) {
+          addResult(`Fetch ${path}`, false, `Error: ${e.message}`);
+        }
+      }
+      
+      // Test 5: Try loading model
+      const pathsToTry = [
+        { model: './model/model.json', metadata: './model/metadata.json' },
+        { model: '/model/model.json', metadata: '/model/metadata.json' },
+        { model: 'model/model.json', metadata: 'model/metadata.json' }
+      ];
+      
+      for (const config of pathsToTry) {
+        try {
+          const model = await tmImage.custom.fromURL(config.model, config.metadata);
+          addResult(`Load ${config.model}`, true, `Success! Model loaded`);
+          break;
+        } catch (e) {
+          addResult(`Load ${config.model}`, false, `Error: ${e.message}`);
+        }
+      }
+    }
+    
+    window.addEventListener('load', debug);
+  </script>
+</body>
+</html>
