@@ -9,6 +9,11 @@ if (typeof tf === 'undefined') {
   alert('TensorFlow.js library failed to load. Please reload the page.');
 }
 
+// Check if Teachable Machine library is loaded
+if (typeof tmImage === 'undefined') {
+  console.error('❌ Teachable Machine library not loaded! Check CDN link in HTML.');
+}
+
 const labels = [
   "Clams","Corals","Crabs","Dolphin","Eel",
   "Jelly Fish","Lobster","Puffers","Sea Rays","Sea Urchins"
@@ -27,26 +32,22 @@ const infoData = {
 };
 
 async function init() {
-  // Load model first (non-blocking UI) but it's fine if camera fails, we still show helpful errors
+  // Load model using Teachable Machine loader
   try {
-    console.log('Attempting to load model from ./model/model.json...');
-    model = await tf.loadGraphModel('./model/model.json');
+    console.log('Loading Teachable Machine model from ./model/model.json...');
+    const modelURL = './model/model.json';
+    const metadataURL = './model/metadata.json';
+    
+    model = await tmImage.custom.fromURL(modelURL, metadataURL);
     console.log('✓ Model loaded successfully:', model);
   } catch (mErr) {
     console.error('❌ Model failed to load. Error:', mErr);
     console.error('Stack:', mErr.stack);
-    // Try alternate path
-    try {
-      console.log('Trying alternate path: /model/model.json');
-      model = await tf.loadGraphModel('/model/model.json');
-      console.log('✓ Model loaded from alternate path');
-    } catch (mErr2) {
-      console.error('❌ Alternate path also failed:', mErr2);
-      const errEl = document.getElementById('error');
-      if (errEl) {
-        errEl.innerText = 'Model failed to load. Make sure model/model.json and model/weights.bin are in the correct directory.';
-        errEl.style.display = 'block';
-      }
+    
+    const errEl = document.getElementById('error');
+    if (errEl) {
+      errEl.innerText = 'Model failed to load: ' + mErr.message + '. Make sure model/model.json and model/metadata.json are accessible.';
+      errEl.style.display = 'block';
     }
   }
 
@@ -179,43 +180,40 @@ async function captureAndPredict() {
     return;
   }
 
-  const input = tf.tidy(() => {
-    const img = tf.browser.fromPixels(canvas);
-    const resized = tf.image.resizeBilinear(img, [224,224]);
-    return resized.div(255).expandDims(0);
-  });
-
-  const prediction = model.predict(input);
-  
-  // Convert prediction tensor to array safely
-  const predArray = prediction.dataSync ? Array.from(prediction.dataSync()) : Array.from(prediction.arraySync()[0] || prediction);
-  console.log('Raw prediction array:', predArray);
-  console.log('Prediction shape:', prediction.shape);
-  console.log('Available labels:', labels);
-  
-  const maxProb = Math.max(...predArray);
-  const maxIdx = predArray.indexOf(maxProb);
-  console.log('Max probability:', maxProb, 'at index:', maxIdx);
-  
-  const species = labels[maxIdx];
-  console.log('Predicted species:', species, 'from labels');
-  
-  if (species && infoData[species]) {
-    document.getElementById('species-name').innerText = infoData[species].common;
-    document.getElementById('common-name').innerText = infoData[species].common;
-    document.getElementById('scientific-name').innerText = infoData[species].sci;
-    document.getElementById('habitat').innerText = infoData[species].habitat;
-    document.getElementById('details').innerText = infoData[species].details;
-  } else {
-    document.getElementById('species-name').innerText = 'Unknown (ID: ' + maxIdx + ')';
-    console.warn('Species not found in info data:', species);
+  try {
+    // Teachable Machine API: predict from canvas element directly
+    const prediction = await model.predict(canvas);
+    console.log('✓ Prediction result:', prediction);
+    
+    // Find the class with highest probability
+    let maxProb = 0;
+    let maxIdx = 0;
+    
+    prediction.forEach((pred, idx) => {
+      console.log(`Class ${idx} (${labels[idx]}): ${pred.probability.toFixed(4)}`);
+      if (pred.probability > maxProb) {
+        maxProb = pred.probability;
+        maxIdx = idx;
+      }
+    });
+    
+    const species = labels[maxIdx];
+    console.log('Predicted species:', species, 'with confidence:', (maxProb * 100).toFixed(1) + '%');
+    
+    if (species && infoData[species]) {
+      document.getElementById('species-name').innerText = infoData[species].common + ' (' + (maxProb * 100).toFixed(0) + '%)';
+      document.getElementById('common-name').innerText = infoData[species].common;
+      document.getElementById('scientific-name').innerText = infoData[species].sci;
+      document.getElementById('habitat').innerText = infoData[species].habitat;
+      document.getElementById('details').innerText = infoData[species].details;
+    } else {
+      document.getElementById('species-name').innerText = 'Unknown species (ID: ' + maxIdx + ')';
+      console.warn('Species not found:', species);
+    }
+  } catch (predErr) {
+    console.error('❌ Prediction failed:', predErr);
+    document.getElementById('species-name').innerText = 'Prediction error: ' + predErr.message;
   }
-  
-  // Dispose tensors
-  try { 
-    tf.dispose(input);
-    tf.dispose(prediction);
-  } catch (e) { console.warn('Error disposing tensors:', e); }
 }
 
 async function toggleFlash() {
