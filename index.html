@@ -39,10 +39,17 @@
     <button class="add-btn">+ Add to my collection</button>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu@4.22.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.22.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4"></script>
+<script>
+  // Fallback CDN if jsDelivr fails
+  if (typeof tmImage === 'undefined') {
+    console.warn('Teachable Machine CDN 1 failed, trying backup...');
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@teachablemachine/image@0.8.4/dist/teachablemachine-image.js';
+    document.head.appendChild(script);
+  }
+</script>
 <script src="app.js"></script>
 </body>
 </html>

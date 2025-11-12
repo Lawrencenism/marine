@@ -32,12 +32,39 @@ const infoData = {
 };
 
 async function init() {
-  // Wait a moment for CDN scripts to fully load
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Wait longer for CDN scripts to fully load
+  console.log('Waiting for CDN libraries to load...');
+  for (let i = 0; i < 50; i++) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if (typeof tmImage !== 'undefined' && typeof tf !== 'undefined') {
+      console.log(`✓ Libraries loaded after ${(i + 1) * 100}ms`);
+      break;
+    }
+  }
   
   console.log('=== Model Loading Debug ===');
   console.log('tmImage available?', typeof tmImage);
   console.log('tf available?', typeof tf);
+  
+  if (typeof tmImage === 'undefined') {
+    console.error('❌ FATAL: tmImage library never loaded! CDN issue.');
+    const errEl = document.getElementById('error');
+    if (errEl) {
+      errEl.innerText = 'FATAL: Teachable Machine library failed to load from CDN. This is a network/CDN issue. Try clearing browser cache and reloading, or check your internet connection.';
+      errEl.style.display = 'block';
+    }
+    return;
+  }
+  
+  if (typeof tf === 'undefined') {
+    console.error('❌ FATAL: TensorFlow.js library never loaded!');
+    const errEl = document.getElementById('error');
+    if (errEl) {
+      errEl.innerText = 'FATAL: TensorFlow.js library failed to load from CDN.';
+      errEl.style.display = 'block';
+    }
+    return;
+  }
   
   // Load model using Teachable Machine loader
   const pathsToTry = [
@@ -46,16 +73,6 @@ async function init() {
   ];
   
   let loaded = false;
-  
-  if (typeof tmImage === 'undefined') {
-    console.error('❌ FATAL: tmImage library never loaded! CDN issue.');
-    const errEl = document.getElementById('error');
-    if (errEl) {
-      errEl.innerText = 'FATAL: Teachable Machine library failed to load from CDN. Check internet connection.';
-      errEl.style.display = 'block';
-    }
-    return;
-  }
   
   for (const pathConfig of pathsToTry) {
     try {
