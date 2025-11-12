@@ -35,7 +35,6 @@ async function init() {
   // Load model using Teachable Machine loader
   const pathsToTry = [
     { model: './model/model.json', metadata: './model/metadata.json', label: 'relative (.)' },
-    { model: '/model/model.json', metadata: '/model/metadata.json', label: 'absolute (/)' },
     { model: 'model/model.json', metadata: 'model/metadata.json', label: 'no-dot' }
   ];
   
@@ -44,6 +43,16 @@ async function init() {
   for (const pathConfig of pathsToTry) {
     try {
       console.log(`Attempting model load from ${pathConfig.label}: ${pathConfig.model}`);
+      
+      // Verify Teachable Machine is available
+      if (typeof tmImage === 'undefined') {
+        console.error('tmImage library not loaded yet, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      if (typeof tmImage === 'undefined') {
+        throw new Error('Teachable Machine library failed to load from CDN');
+      }
       
       // First verify files can be fetched
       const modelResp = await fetch(pathConfig.model);
@@ -67,10 +76,10 @@ async function init() {
   if (!loaded) {
     const errEl = document.getElementById('error');
     if (errEl) {
-      errEl.innerText = 'Model failed to load from all paths. Check browser console for details. Ensure model/ directory is in the same folder as index.html.';
+      errEl.innerText = 'Model failed to load. Check browser console for details. Make sure model/ directory exists.';
       errEl.style.display = 'block';
     }
-    console.error('❌ All model load attempts failed. Paths tried:', pathsToTry.map(p => p.model));
+    console.error('❌ All model load attempts failed.');
   }
 
   const video = document.getElementById('webcam');
