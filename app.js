@@ -2,6 +2,13 @@ let model;
 let flashEnabled = false;
 let stream;
 let captured = false;
+
+// Check if TensorFlow is loaded
+if (typeof tf === 'undefined') {
+  console.error('❌ TensorFlow.js library not loaded! Check CDN link in HTML.');
+  alert('TensorFlow.js library failed to load. Please reload the page.');
+}
+
 const labels = [
   "Clams","Corals","Crabs","Dolphin","Eel",
   "Jelly Fish","Lobster","Puffers","Sea Rays","Sea Urchins"
@@ -22,9 +29,25 @@ const infoData = {
 async function init() {
   // Load model first (non-blocking UI) but it's fine if camera fails, we still show helpful errors
   try {
+    console.log('Attempting to load model from ./model/model.json...');
     model = await tf.loadGraphModel('./model/model.json');
+    console.log('✓ Model loaded successfully:', model);
   } catch (mErr) {
-    console.warn('Model failed to load (this may affect predictions):', mErr);
+    console.error('❌ Model failed to load. Error:', mErr);
+    console.error('Stack:', mErr.stack);
+    // Try alternate path
+    try {
+      console.log('Trying alternate path: /model/model.json');
+      model = await tf.loadGraphModel('/model/model.json');
+      console.log('✓ Model loaded from alternate path');
+    } catch (mErr2) {
+      console.error('❌ Alternate path also failed:', mErr2);
+      const errEl = document.getElementById('error');
+      if (errEl) {
+        errEl.innerText = 'Model failed to load. Make sure model/model.json and model/weights.bin are in the correct directory.';
+        errEl.style.display = 'block';
+      }
+    }
   }
 
   const video = document.getElementById('webcam');

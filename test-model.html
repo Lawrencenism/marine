@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Model Load Test</title>
+</head>
+<body>
+  <h1>Model Load Diagnostics</h1>
+  <p>Check the console below and browser DevTools (F12) for details.</p>
+  <div id="output" style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; min-height: 200px; font-family: monospace; white-space: pre-wrap;"></div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script>
+    const output = document.getElementById('output');
+    
+    function log(msg) {
+      console.log(msg);
+      output.innerText += msg + '\n';
+    }
+    
+    async function testModelLoad() {
+      log('1. Testing TensorFlow.js availability...');
+      if (typeof tf === 'undefined') {
+        log('❌ TensorFlow.js NOT loaded!');
+        return;
+      }
+      log('✓ TensorFlow.js loaded. Version: ' + tf.version.tfjs);
+      
+      log('\n2. Testing model path ./model/model.json ...');
+      try {
+        const model = await tf.loadGraphModel('./model/model.json');
+        log('✓ Model loaded successfully!');
+        log('Model inputs: ' + JSON.stringify(model.inputs.map(i => i.shape)));
+        log('Model outputs: ' + JSON.stringify(model.outputs.map(o => o.shape)));
+      } catch (err) {
+        log('❌ Failed to load ./model/model.json');
+        log('Error: ' + err.message);
+      }
+      
+      log('\n3. Testing model path /model/model.json ...');
+      try {
+        const model = await tf.loadGraphModel('/model/model.json');
+        log('✓ Model loaded successfully from /model/model.json!');
+      } catch (err) {
+        log('❌ Failed to load /model/model.json');
+        log('Error: ' + err.message);
+      }
+      
+      log('\n4. Testing file fetch directly...');
+      try {
+        const resp = await fetch('./model/model.json');
+        if (resp.ok) {
+          const json = await resp.json();
+          log('✓ model.json fetches successfully. File size: ' + JSON.stringify(json).length + ' bytes');
+        } else {
+          log('❌ model.json fetch returned status ' + resp.status);
+        }
+      } catch (err) {
+        log('❌ Fetch failed: ' + err.message);
+      }
+      
+      log('\n5. Testing weights.bin fetch...');
+      try {
+        const resp = await fetch('./model/weights.bin');
+        if (resp.ok) {
+          log('✓ weights.bin fetches successfully. Size: ' + resp.headers.get('content-length') + ' bytes');
+        } else {
+          log('❌ weights.bin fetch returned status ' + resp.status);
+        }
+      } catch (err) {
+        log('❌ Fetch failed: ' + err.message);
+      }
+    }
+    
+    // Run tests when page loads
+    window.addEventListener('load', testModelLoad);
+  </script>
+</body>
+</html>
