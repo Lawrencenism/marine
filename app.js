@@ -36,12 +36,17 @@ async function init() {
     console.log('✓ Model loaded. Classes:', maxPredictions);
     
     // Setup webcam using Teachable Machine Webcam class
+    // Start with back camera on phones (environment) and flip enabled for desktop
     const flip = true;
     webcam = new tmImage.Webcam(224, 224, flip);
-    console.log('Setting up webcam...');
+    console.log('Setting up webcam with back camera...');
     
-    await webcam.setup();
-    console.log('✓ Webcam ready');
+    // Request back camera (environment) for phones, front camera is secondary
+    await webcam.setup({
+      facingMode: 'environment'
+    });
+    console.log('✓ Webcam ready - using back camera');
+    isFrontCamera = false;
     
     // Append webcam canvas to DOM
     document.getElementById("webcam-container").appendChild(webcam.canvas);
@@ -117,81 +122,134 @@ async function predict() {
 
 async function flipCamera() {
   try {
-    if (!webcam) return;
+    if (!webcam) {
+      console.error('Webcam not initialized');
+      return;
+    }
     
+    const flipButton = document.getElementById('flip-camera');
+    flipButton.style.opacity = '0.5';
+    flipButton.style.pointerEvents = 'none';
+    
+    // Toggle camera
     isFrontCamera = !isFrontCamera;
     const facingMode = isFrontCamera ? 'user' : 'environment';
-    const flipButton = document.getElementById('flip-camera');
+    const cameraLabel = isFrontCamera ? 'front' : 'back';
     
-    // Visual feedback while flipping
-    flipButton.style.opacity = '0.5';
+    console.log(`Switching to ${cameraLabel} camera...`);
     
-    // Stop current webcam
-    webcam.stop();
+    // Stop current webcam stream
+    if (webcam && webcam.canvas && webcam.canvas.parentNode) {
+      webcam.stop();
+    }
     
-    // Create new webcam with flipped camera
+    // Create new webcam instance with new facingMode
     webcam = new tmImage.Webcam(224, 224, true);
+    
+    // Setup with specific facing mode
     await webcam.setup({
-      facingMode: facingMode
+      facingMode: { ideal: facingMode }
     });
     
-    document.getElementById('webcam-container').innerHTML = '';
-    document.getElementById('webcam-container').appendChild(webcam.canvas);
+    // Replace canvas in DOM
+    const container = document.getElementById('webcam-container');
+    container.innerHTML = '';
+    container.appendChild(webcam.canvas);
     
-    await webcam.play();
+    // Resume playback if was playing
+    if (isLooping) {
+      await webcam.play();
+    }
     
-    // Visual feedback - show which camera is active
+    // Update button visual feedback
     flipButton.style.opacity = '1';
+    flipButton.style.pointerEvents = 'auto';
     flipButton.style.backgroundColor = isFrontCamera ? '#FFD700' : '#4CAF50';
-    flipButton.title = isFrontCamera ? 'Using front camera' : 'Using back camera';
+    flipButton.title = isFrontCamera ? 'Switch to back camera' : 'Switch to front camera';
+    
+    console.log(`✓ Switched to ${cameraLabel} camera`);
     
   } catch (error) {
     console.error('Error flipping camera:', error);
-    document.getElementById('error').innerText = `Camera flip failed: ${error.message}`;
+    const flipButton = document.getElementById('flip-camera');
     flipButton.style.opacity = '1';
+    flipButton.style.pointerEvents = 'auto';
+    
+    document.getElementById('error').innerText = `Camera flip failed: ${error.message}`;
+    document.getElementById('error').style.display = 'block';
   }
 }
 
 function captureAndPredict() {
-  console.log('Capture clicked');
-  isFrozen = true;
-  const startBtn = document.getElementById('start-camera');
-  startBtn.title = 'Resume camera';
-  startBtn.style.opacity = '0.6';
-  alert('Photo captured! Species: ' + document.getElementById('species-name').innerText);
+  try {
+    console.log('Photo captured');
+    isFrozen = true;
+    const startBtn = document.getElementById('start-camera');
+    startBtn.title = 'Resume camera';
+    startBtn.style.opacity = '0.6';
+    
+    const speciesName = document.getElementById('species-name').innerText;
+    alert('📸 Photo captured!\n\n' + speciesName);
+  } catch (error) {
+    console.error('Error capturing:', error);
+    document.getElementById('error').innerText = `Capture error: ${error.message}`;
+    document.getElementById('error').style.display = 'block';
+  }
 }
 
 async function toggleCamera() {
   const startBtn = document.getElementById('start-camera');
   
-  if (isFrozen) {
-    // Resume from frozen state
-    console.log('Resuming camera...');
-    isFrozen = false;
-    startBtn.title = 'Pause camera';
-    startBtn.style.opacity = '1';
-    await webcam.play();
-    if (!isLooping) {
+  try {
+    if (isFrozen) {
+      // Resume from frozen state
+      console.log('Resuming camera...');
+      isFrozen = false;
+      startBtn.title = 'Pause camera';
+      startBtn.style.opacity = '1';
+      
+      if (!isLooping) {
+        isLooping = true;
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+      }
+    } else if (isLooping) {
+      // Pause/freeze the camera
+      console.log('Pausing camera...');
+      isFrozen = true;
+      startBtn.title = 'Resume camera';
+      startBtn.style.opacity = '0.6';
+    } else {
+      // Start camera from initial state
+      console.log('Starting camera...');
       isLooping = true;
+      startBtn.title = 'Pause camera';
+      startBtn.style.opacity = '1';
+      await webcam.play();
       window.requestAnimationFrame(loop);
     }
-  } else {
-    // Start camera from initial state
-    console.log('Start camera clicked');
-    isLooping = true;
-    startBtn.title = 'Pause camera';
-    await webcam.play();
-    window.requestAnimationFrame(loop);
+  } catch (error) {
+    console.error('Error toggling camera:', error);
+    document.getElementById('error').innerText = `Camera error: ${error.message}`;
+    document.getElementById('error').style.display = 'block';
   }
 }
 
 function toggleFlash() {
-  flashEnabled = !flashEnabled;
-  const flashBtn = document.getElementById('flash');
-  if (flashEnabled) {
-    flashBtn.style.color = 'yellow';
-  } else {
-    flashBtn.style.color = '';
+  try {
+    flashEnabled = !flashEnabled;
+    const flashBtn = document.getElementById('flash');
+    if (flashEnabled) {
+      flashBtn.style.color = 'yellow';
+      flashBtn.style.textShadow = '0 0 10px yellow';
+      console.log('Flash enabled');
+    } else {
+      flashBtn.style.color = '';
+      flashBtn.style.textShadow = '';
+      console.log('Flash disabled');
+    }
+  } catch (error) {
+    console.error('Error toggling flash:', error);
   }
 }
 
