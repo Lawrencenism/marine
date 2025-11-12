@@ -47,14 +47,26 @@ async function init() {
     document.getElementById("webcam-container").appendChild(webcam.canvas);
     
     // Setup event listeners
-    document.getElementById('start-camera').addEventListener('click', toggleCamera);
+    const startBtn = document.getElementById('start-camera');
+    const flipBtn = document.getElementById('flip-camera');
+    const captureBtn = document.getElementById('capture');
+    const flashBtn = document.getElementById('flash');
+    const galleryBtn = document.getElementById('gallery');
+    const addBtn = document.querySelector('.add-btn');
     
-    document.getElementById('flip-camera').addEventListener('click', flipCamera);
+    if (!startBtn) throw new Error('start-camera button not found');
+    if (!flipBtn) throw new Error('flip-camera button not found');
+    if (!captureBtn) throw new Error('capture button not found');
+    if (!flashBtn) throw new Error('flash button not found');
+    if (!galleryBtn) throw new Error('gallery button not found');
+    if (!addBtn) throw new Error('add-btn button not found');
     
-    document.getElementById('capture').addEventListener('click', captureAndPredict);
-    document.getElementById('flash').addEventListener('click', toggleFlash);
-    document.getElementById('gallery').addEventListener('click', () => alert('Gallery not implemented yet'));
-    document.querySelector('.add-btn').addEventListener('click', () => alert('Added to collection!'));
+    startBtn.addEventListener('click', toggleCamera);
+    flipBtn.addEventListener('click', flipCamera);
+    captureBtn.addEventListener('click', captureAndPredict);
+    flashBtn.addEventListener('click', toggleFlash);
+    galleryBtn.addEventListener('click', () => alert('Gallery not implemented yet'));
+    addBtn.addEventListener('click', () => alert('Added to collection!'));
     
     console.log('✓ App initialized successfully!');
   } catch (error) {
