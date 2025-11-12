@@ -36,8 +36,8 @@ async function init() {
     console.log('✓ Model loaded. Classes:', maxPredictions);
     
     // Setup webcam using Teachable Machine Webcam class
-    // Start with back camera on phones (environment) and flip enabled for desktop
-    const flip = true;
+    // Start with back camera on phones (environment), no mirroring
+    const flip = false;
     webcam = new tmImage.Webcam(224, 224, flip);
     console.log('Setting up webcam with back camera...');
     
@@ -141,8 +141,8 @@ async function flipCamera() {
       webcam.stop();
     }
     
-    // Create new webcam instance with new facingMode
-    webcam = new tmImage.Webcam(224, 224, true);
+    // Create new webcam instance with new facingMode, no mirroring
+    webcam = new tmImage.Webcam(224, 224, false);
     
     // Setup with specific facing mode
     await webcam.setup({
@@ -172,9 +172,20 @@ async function flipCamera() {
     const flipButton = document.getElementById('flip-camera');
     flipButton.style.opacity = '1';
     flipButton.style.pointerEvents = 'auto';
-    
-    document.getElementById('error').innerText = `Camera flip failed: ${error.message}`;
-    document.getElementById('error').style.display = 'block';
+
+    // Try fallback: if ideal failed, try exact
+    try {
+      console.log('Trying fallback facingMode...');
+      const fallbackFacingMode = isFrontCamera ? 'user' : 'environment';
+      await webcam.setup({
+        facingMode: fallbackFacingMode
+      });
+      console.log('Fallback succeeded');
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      document.getElementById('error').innerText = `Camera flip failed: ${error.message}`;
+      document.getElementById('error').style.display = 'block';
+    }
   }
 }
 
