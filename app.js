@@ -163,16 +163,36 @@ async function captureAndPredict() {
   });
 
   const prediction = model.predict(input);
-  const probs = Array.isArray(prediction) ? prediction[0].arraySync()[0] : prediction.arraySync()[0];
-  const maxIdx = probs.indexOf(Math.max(...probs));
+  
+  // Convert prediction tensor to array safely
+  const predArray = prediction.dataSync ? Array.from(prediction.dataSync()) : Array.from(prediction.arraySync()[0] || prediction);
+  console.log('Raw prediction array:', predArray);
+  console.log('Prediction shape:', prediction.shape);
+  console.log('Available labels:', labels);
+  
+  const maxProb = Math.max(...predArray);
+  const maxIdx = predArray.indexOf(maxProb);
+  console.log('Max probability:', maxProb, 'at index:', maxIdx);
+  
   const species = labels[maxIdx];
-  document.getElementById('species-name').innerText = infoData[species].common;
-  document.getElementById('common-name').innerText = infoData[species].common;
-  document.getElementById('scientific-name').innerText = infoData[species].sci;
-  document.getElementById('habitat').innerText = infoData[species].habitat;
-  document.getElementById('details').innerText = infoData[species].details;
+  console.log('Predicted species:', species, 'from labels');
+  
+  if (species && infoData[species]) {
+    document.getElementById('species-name').innerText = infoData[species].common;
+    document.getElementById('common-name').innerText = infoData[species].common;
+    document.getElementById('scientific-name').innerText = infoData[species].sci;
+    document.getElementById('habitat').innerText = infoData[species].habitat;
+    document.getElementById('details').innerText = infoData[species].details;
+  } else {
+    document.getElementById('species-name').innerText = 'Unknown (ID: ' + maxIdx + ')';
+    console.warn('Species not found in info data:', species);
+  }
+  
   // Dispose tensors
-  try { tf.dispose([input, prediction]); } catch (e) { /* ignore disposal errors */ }
+  try { 
+    tf.dispose(input);
+    tf.dispose(prediction);
+  } catch (e) { console.warn('Error disposing tensors:', e); }
 }
 
 async function toggleFlash() {
