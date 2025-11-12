@@ -32,6 +32,13 @@ const infoData = {
 };
 
 async function init() {
+  // Wait a moment for CDN scripts to fully load
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  console.log('=== Model Loading Debug ===');
+  console.log('tmImage available?', typeof tmImage);
+  console.log('tf available?', typeof tf);
+  
   // Load model using Teachable Machine loader
   const pathsToTry = [
     { model: './model/model.json', metadata: './model/metadata.json', label: 'relative (.)' },
@@ -40,46 +47,62 @@ async function init() {
   
   let loaded = false;
   
+  if (typeof tmImage === 'undefined') {
+    console.error('❌ FATAL: tmImage library never loaded! CDN issue.');
+    const errEl = document.getElementById('error');
+    if (errEl) {
+      errEl.innerText = 'FATAL: Teachable Machine library failed to load from CDN. Check internet connection.';
+      errEl.style.display = 'block';
+    }
+    return;
+  }
+  
   for (const pathConfig of pathsToTry) {
     try {
-      console.log(`Attempting model load from ${pathConfig.label}: ${pathConfig.model}`);
-      
-      // Verify Teachable Machine is available
-      if (typeof tmImage === 'undefined') {
-        console.error('tmImage library not loaded yet, waiting...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      if (typeof tmImage === 'undefined') {
-        throw new Error('Teachable Machine library failed to load from CDN');
-      }
+      console.log(`\nAttempting: ${pathConfig.label} (${pathConfig.model})`);
       
       // First verify files can be fetched
+      console.log('  → Fetching files...');
       const modelResp = await fetch(pathConfig.model);
       const metadataResp = await fetch(pathConfig.metadata);
       
+      console.log(`  → model.json: ${modelResp.status}`);
+      console.log(`  → metadata.json: ${metadataResp.status}`);
+      
       if (!modelResp.ok || !metadataResp.ok) {
-        console.warn(`Files not found (${pathConfig.label}): model=${modelResp.status}, metadata=${metadataResp.status}`);
+        console.warn(`  ✗ Files not accessible`);
         continue;
       }
       
-      console.log(`✓ Files accessible (${pathConfig.label}), loading model...`);
+      console.log(`  → Files OK, parsing JSON...`);
+      const modelJson = await modelResp.clone().json();
+      const metadataJson = await metadataResp.json();
+      console.log(`  → modelTopology present:`, !!modelJson.modelTopology);
+      console.log(`  → weightsManifest present:`, !!modelJson.weightsManifest);
+      console.log(`  → metadata.labels:`, metadataJson.labels?.length || 0);
+      
+      console.log(`  → Calling tmImage.custom.fromURL()...`);
       model = await tmImage.custom.fromURL(pathConfig.model, pathConfig.metadata);
-      console.log('✓ Model loaded successfully:', model);
+      
+      console.log('✓✓✓ Model loaded successfully!');
+      console.log('  Model:', model);
       loaded = true;
       break;
     } catch (mErr) {
-      console.warn(`Failed (${pathConfig.label}):`, mErr.message);
+      console.error(`  ✗ FAILED: ${mErr.message}`);
+      console.error(`    Stack: ${mErr.stack}`);
     }
   }
   
   if (!loaded) {
     const errEl = document.getElementById('error');
     if (errEl) {
-      errEl.innerText = 'Model failed to load. Check browser console for details. Make sure model/ directory exists.';
+      errEl.innerText = 'Model failed to load. Open browser console (F12) for detailed error logs.';
       errEl.style.display = 'block';
     }
-    console.error('❌ All model load attempts failed.');
+    console.error('\n❌ ALL ATTEMPTS FAILED');
+  } else {
+    console.log('\n=== Model Ready ===');
   }
 
   const video = document.getElementById('webcam');
