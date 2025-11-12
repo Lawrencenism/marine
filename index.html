@@ -9,21 +9,22 @@
   .app-container { max-width: 400px; margin: auto; padding: 10px; }
   .species-card { background: #fff; border-radius: 15px; padding: 10px; text-align:center; }
   #species-name { font-weight:bold; margin: 10px 0; font-size: 1.2rem; }
-  #webcam { border-radius: 15px; width: 100%; }
+  #webcam-container { display: flex; justify-content: center; margin: 10px 0; }
+  #webcam-container canvas { border-radius: 15px; background: #000; }
   .buttons { display:flex; justify-content:space-around; margin: 10px 0; }
   .button { font-size: 1.5rem; cursor:pointer; }
   .info-panel { text-align:left; background:#cce6ff; border-radius: 10px; padding:10px; margin:10px 0; }
   .add-btn { display:block; width:100%; padding:10px; font-size:1rem; font-weight:bold;
              background:#00cc66; color:#fff; border:none; border-radius:10px; cursor:pointer; }
+  #error { color:red; display:none; margin-top:10px; padding: 10px; background: #ffe6e6; border-radius: 5px; }
 </style>
 </head>
 <body>
 <div class="app-container">
   <div class="species-card">
     <div id="species-name">[Species Name]</div>
-  <video id="webcam" autoplay playsinline muted></video>
-  <canvas id="canvas" style="display:none; width:100%; border-radius:15px; background:#000;"></canvas>
-  <div id="error" style="color:red; display:none; margin-top:10px;"></div>
+    <div id="webcam-container"></div>
+    <div id="error"></div>
     <div class="buttons">
       <div class="button" id="start-camera" title="Start camera">▶️</div>
       <div class="button" id="flash">⚡</div>
@@ -39,17 +40,9 @@
     <button class="add-btn">+ Add to my collection</button>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4"></script>
-<script>
-  // Fallback CDN if jsDelivr fails
-  if (typeof tmImage === 'undefined') {
-    console.warn('Teachable Machine CDN 1 failed, trying backup...');
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@teachablemachine/image@0.8.4/dist/teachablemachine-image.js';
-    document.head.appendChild(script);
-  }
-</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4/dist/teachablemachine-image.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
